@@ -1,0 +1,6 @@
+*.pyc
+
+cloned/
+results/
+tool_results/
+dist/
