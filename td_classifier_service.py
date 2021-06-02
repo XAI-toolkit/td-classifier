@@ -419,6 +419,9 @@ def run_classifier_service(git_url_param=None):
                 
         # Export results in csv, json and html
         export_results(cwd, repo_name, metrics_df)
+        
+        # Remove temp files like source code, analysis intermediate results etc.
+        # remove_temp_files(cwd, repo_name)
                 
         # Convert dataframe to dict
         results = metrics_df.to_dict(orient='records')

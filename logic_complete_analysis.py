@@ -6,6 +6,7 @@ Created on Tue May 25 11:41:10 2021
 """
 
 import os
+import shutil
 import time
 import subprocess
 import pickle
@@ -429,3 +430,14 @@ def export_results(cwd, repo_name, metrics_df):
     metrics_df.loc[metrics_df['high_td'] == 1].to_html(r'%s\%s_high_td_classes.html' % (data_dir, repo_name), justify='left')
     
     print('- Detailed results in csv, json and html format can be found in %s folder' % data_dir)
+
+def remove_temp_files(cwd, repo_name):
+    clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+    pydriller_dir = r'%s\tool_results\pydriller\%s' % (cwd, repo_name)
+    ck_dir = r'%s\tool_results\ck\%s' % (cwd, repo_name)
+    cpd_dir = r'%s\tool_results\cpd\%s' % (cwd, repo_name)
+    cloc_dir = r'%s\tool_results\cloc\%s' % (cwd, repo_name)
+    
+    shutil.rmtree(clone_dir)
+    
+    
