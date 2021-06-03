@@ -10,7 +10,7 @@ import sys
 import os
 import time
 import pandas as pd
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from waitress import serve
 from logic_complete_analysis import clone_project, run_pydriller, run_ck, run_refactoring_miner, run_cpd, run_cloc, run_classifier, export_results
@@ -436,6 +436,72 @@ def run_classifier_service(git_url_param=None):
         resp.status_code = 200
 
         return resp
+
+#===============================================================================
+# run_classifier_service ()
+#===============================================================================
+@app.route('/TDClassifier/DownloadCSV', methods=['GET'])
+def download_csv(git_url_param=None):
+    """
+    API Call to DownloadCSV service
+    Arguments:
+        git_url_param: Required (sent as URL query parameter from API Call)
+    Returns:
+        A csv containing the classification results, intermediate static analysis
+        results, a status code and a message.
+    """
+
+    # Parse URL-encoded parameters
+    git_url_param = request.args.get('git_url', type=str) # Required: if key doesn't exist, returns None
+
+    # If required parameters are missing from URL
+    if git_url_param is None:
+        return unprocessable_entity()
+    else:
+        # Set repo name from repo url
+        if '.git' not in git_url_param:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]))).lower().strip()
+        else:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]).split('.')[-2])).lower().strip()
+        
+        # Set results current working directory
+        cwd = os.environ.get('CWD')
+        data_dir = r'%s/results/%s' % (cwd, repo_name)
+        
+        return send_from_directory(directory=data_dir, filename='%s_all_classes.csv' % repo_name, mimetype='text/csv', as_attachment=True)
+
+#===============================================================================
+# run_classifier_service ()
+#===============================================================================
+@app.route('/TDClassifier/DownloadJSON', methods=['GET'])
+def download_json(git_url_param=None):
+    """
+    API Call to DownloadJSON service
+    Arguments:
+        git_url_param: Required (sent as URL query parameter from API Call)
+    Returns:
+        A JSON containing the classification results, intermediate static analysis
+        results, a status code and a message.
+    """
+
+    # Parse URL-encoded parameters
+    git_url_param = request.args.get('git_url', type=str) # Required: if key doesn't exist, returns None
+
+    # If required parameters are missing from URL
+    if git_url_param is None:
+        return unprocessable_entity()
+    else:
+        # Set repo name from repo url
+        if '.git' not in git_url_param:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]))).lower().strip()
+        else:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]).split('.')[-2])).lower().strip()
+        
+        # Set results current working directory
+        cwd = os.environ.get('CWD')
+        data_dir = r'%s/results/%s' % (cwd, repo_name)
+        
+        return send_from_directory(directory=data_dir, filename='%s_all_classes.json' % repo_name, mimetype='application/json', as_attachment=True)
 
 #===============================================================================
 # errorhandler ()
