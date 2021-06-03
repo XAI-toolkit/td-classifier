@@ -52,7 +52,7 @@ def td_classifier(git_url_param=None, analysis_type_param=None):
         
         # Set clone and current working directory
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         start_time = time.time()
         
@@ -131,7 +131,7 @@ def clone_project_service(git_url_param=None, analysis_type_param=None):
         
         # Set clone and current working directory
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         # Run GitPython
         last_commit, first_commit = clone_project(git_url_param, clone_dir, repo_name, analysis_type_param)
@@ -227,7 +227,7 @@ def run_ck_service(git_url_param=None):
         
         # Set clone and current working directory
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         # Run CK
         run_ck2(cwd, clone_dir, repo_name)
@@ -275,7 +275,7 @@ def run_refactoring_miner_service(git_url_param=None, first_commit_param=None, l
         
         # Set clone and current working directory
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         # Run CK
         run_refactoring_miner2(cwd, clone_dir, repo_name, first_commit_param, last_commit_param)
@@ -319,7 +319,7 @@ def run_cpd_service(git_url_param=None):
         
         # Set clone and current working 
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         # Run CPD
         run_cpd2(cwd, clone_dir, repo_name)
@@ -363,7 +363,7 @@ def run_cloc_service(git_url_param=None):
         
         # Set clone and current working directory
         cwd = os.environ.get('CWD')
-        clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
+        clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
         
         # Run CPD
         run_cloc2(cwd, clone_dir, repo_name)

@@ -7,6 +7,7 @@ Created on Tue May 25 11:41:10 2021
 
 import os
 import shutil
+import platform
 import time
 import subprocess
 import pickle
@@ -57,7 +58,7 @@ def run_pydriller(cwd, git_url, repo_name, from_commit, to_commit, metrics_df):
     print('~~~~~~ Running PyDriller ~~~~~~')
     
     # Create PyDriller results directory
-    pydriller_dir = r'%s\tool_results\pydriller\%s' % (cwd, repo_name)
+    pydriller_dir = r'%s/tool_results/pydriller/%s' % (cwd, repo_name)
     if not os.path.exists(pydriller_dir):
         os.makedirs(pydriller_dir)
 
@@ -114,7 +115,7 @@ def run_pydriller(cwd, git_url, repo_name, from_commit, to_commit, metrics_df):
     temp_dataset.insert(1, 'class_name', class_col)
     
     # Export dataframe to csv
-    temp_dataset.to_csv(r'%s\%s_pydriller_measures.csv' % (pydriller_dir, repo_name), sep=',', na_rep='', index=False)
+    temp_dataset.to_csv(r'%s/%s_pydriller_measures.csv' % (pydriller_dir, repo_name), sep=',', na_rep='', index=False)
     
     # Merge pydriller metrics with metrics_df
     metrics_df = metrics_df.append(temp_dataset)
@@ -125,14 +126,14 @@ def run_ck(cwd, clone_dir, repo_name, metrics_df):
     print('~~~~~~ Running CK ~~~~~~')
     
     # Create ck results directory
-    ck_dir = r'%s\tool_results\ck\%s' % (cwd, repo_name)
+    ck_dir = r'%s/tool_results/ck/%s' % (cwd, repo_name)
     if not os.path.exists(ck_dir):
         os.makedirs(ck_dir)
     os.chdir(ck_dir)
     
     # Execute ck jar
     start_time = time.time()
-    COMMAND1 = r'java -jar %s\lib\ck-0.6.4-SNAPSHOT-jar-with-dependencies.jar %s true 0 false' % (cwd, clone_dir)
+    COMMAND1 = r'java -jar %s/lib/ck-0.6.4-SNAPSHOT-jar-with-dependencies.jar %s true 0 false' % (cwd, clone_dir)
     p = subprocess.Popen(COMMAND1, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (stdout, stderr) = p.communicate()
     exit_code = p.returncode
@@ -148,13 +149,18 @@ def run_ck(cwd, clone_dir, repo_name, metrics_df):
     
     # Read ck csv results
     start_time = time.time()
-    temp_dataset = pd.read_csv(r'%s\class.csv' % ck_dir, sep=",")
+    temp_dataset = pd.read_csv(r'%s/class.csv' % ck_dir, sep=",")
     # Remove useless prefix from class path and class name
-    for index, row in temp_dataset.iterrows(): 
-        temp_dataset.loc[index,'file'] = row['file'].split('%s\\' % repo_name, 1)[-1]
-        temp_dataset.loc[index,'class'] = '%s.java' % row['class'].split('.')[-1]
-    # Replace '\' with '/'
-    temp_dataset['file'] = temp_dataset['file'].str.replace('\\', '/')
+    if platform.system() == 'Windows':
+        for index, row in temp_dataset.iterrows(): 
+            temp_dataset.loc[index,'file'] = row['file'].split('%s\\' % repo_name, 1)[-1]
+            temp_dataset.loc[index,'class'] = '%s.java' % row['class'].split('.')[-1]
+        # Replace '\' with '/'
+        temp_dataset['file'] = temp_dataset['file'].str.replace('\\', '/')
+    elif platform.system() == 'Linux':
+        for index, row in temp_dataset.iterrows(): 
+            temp_dataset.loc[index,'file'] = row['file'].split('%s/' % repo_name, 1)[-1]
+            temp_dataset.loc[index,'class'] = '%s.java' % row['class'].split('.')[-1]
     
     # Merge ck metrics with metrics_df
     for index, row in temp_dataset.iterrows():
@@ -173,7 +179,7 @@ def run_ck(cwd, clone_dir, repo_name, metrics_df):
     print('- Successfully merged CK metrics (%s sec)' % round(time.time() - start_time, 2))
     
     # Export dataframe to csv
-    metrics_df.to_csv(r'%s\%s_ck_measures.csv' % (ck_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.to_csv(r'%s/%s_ck_measures.csv' % (ck_dir, repo_name), sep=',', na_rep='', index=False)
             
     return metrics_df
 
@@ -181,13 +187,13 @@ def run_refactoring_miner(cwd, clone_dir, repo_name, from_commit, to_commit, met
     print('~~~~~~ Running RefactoringMiner ~~~~~~')
     
     # Create rm results directory
-    rm_dir = r'%s\tool_results\rm\%s' % (cwd, repo_name)
+    rm_dir = r'%s/tool_results/rm/%s' % (cwd, repo_name)
     if not os.path.exists(rm_dir):
         os.makedirs(rm_dir)
     
     # Execute rm tool
     start_time = time.time()
-    COMMAND2 = r'%s\lib\RefactoringMiner\bin\RefactoringMiner -bc %s %s %s > %s\%s_refactoring_measures.json' % (cwd, clone_dir, from_commit, to_commit, rm_dir, repo_name)
+    COMMAND2 = r'%s/lib/RefactoringMiner/bin/RefactoringMiner -bc %s %s %s > %s/%s_refactoring_measures.json' % (cwd, clone_dir, from_commit, to_commit, rm_dir, repo_name)
     p = subprocess.Popen(COMMAND2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (stdout, stderr) = p.communicate()
     exit_code = p.returncode
@@ -203,7 +209,7 @@ def run_refactoring_miner(cwd, clone_dir, repo_name, from_commit, to_commit, met
     start_time = time.time()
     temp_dataset = pd.DataFrame()
     # Read and flatten json files
-    df_from_json = pd.DataFrame.from_records(pd.read_json(r'%s\%s_refactoring_measures.json' % (rm_dir, repo_name))['commits'])
+    df_from_json = pd.DataFrame.from_records(pd.read_json(r'%s/%s_refactoring_measures.json' % (rm_dir, repo_name))['commits'])
     if not df_from_json.empty:
         for index, row in df_from_json.iterrows():
             if row['refactorings']:
@@ -231,7 +237,7 @@ def run_refactoring_miner(cwd, clone_dir, repo_name, from_commit, to_commit, met
     print('- Successfully merged RefactoringMiner metrics (%s sec)' % round(time.time() - start_time, 2))
         
     # Export dataframe to csv
-    metrics_df.to_csv(r'%s\%s_rm_measures.csv' % (rm_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.to_csv(r'%s/%s_rm_measures.csv' % (rm_dir, repo_name), sep=',', na_rep='', index=False)
             
     return metrics_df
 
@@ -239,13 +245,16 @@ def run_cpd(cwd, clone_dir, repo_name, metrics_df):
     print('~~~~~~ Running CPD ~~~~~~')
     
     # Create cpd results directory
-    cpd_dir = r'%s\tool_results\cpd\%s' % (cwd, repo_name)
+    cpd_dir = r'%s/tool_results/cpd/%s' % (cwd, repo_name)
     if not os.path.exists(cpd_dir):
         os.makedirs(cpd_dir)
     
     # Execute cpd tool
     start_time = time.time()
-    COMMAND3 = r'%s\lib\pmd\bin\cpd.bat --minimum-tokens 100 --files %s --skip-lexical-errors --format csv > %s\%s_duplication_measures.csv' % (cwd, clone_dir, cpd_dir, repo_name)
+    if platform.system() == 'Windows':
+        COMMAND3 = r'%s/lib/pmd/bin/cpd.bat --minimum-tokens 100 --files %s --skip-lexical-errors --format csv > %s/%s_duplication_measures.csv' % (cwd, clone_dir, cpd_dir, repo_name)
+    elif platform.system() == 'Linux':
+        COMMAND3 = r'%s/lib/pmd/bin/run.sh cpd --minimum-tokens 100 --files %s --skip-lexical-errors --format csv > %s/%s_duplication_measures.csv' % (cwd, clone_dir, cpd_dir, repo_name)
     p = subprocess.Popen(COMMAND3, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (stdout, stderr) = p.communicate()
     exit_code = p.returncode
@@ -259,7 +268,7 @@ def run_cpd(cwd, clone_dir, repo_name, metrics_df):
         
     # Read CPD csv results 
     start_time = time.time()
-    temp_dataset = pd.read_table(r'%s\%s_duplication_measures.csv' % (cpd_dir, repo_name))
+    temp_dataset = pd.read_table(r'%s/%s_duplication_measures.csv' % (cpd_dir, repo_name))
     if not temp_dataset.empty:
         temp_dataset = temp_dataset.iloc[:,0].str.split(',', expand=True)
         temp_dataset_2 = pd.DataFrame()
@@ -294,7 +303,8 @@ def run_cpd(cwd, clone_dir, repo_name, metrics_df):
         temp_dataset_2[0] = sum_tuple_list
         temp_dataset_2.rename(columns = {0:'duplicated_lines'}, inplace=True)
         # Replace '\' with '/'
-        temp_dataset_2['class_path'] = temp_dataset_2['class_path'].str.replace('\\', '/')
+        if platform.system() == 'Windows':
+            temp_dataset_2['class_path'] = temp_dataset_2['class_path'].str.replace('\\', '/')
         # Removed useless prefix from class path
         for index, row in temp_dataset_2.iterrows(): 
             temp_dataset_2.loc[index,'class_path'] = row['class_path'].split('%s/' % repo_name, 1)[-1]
@@ -311,7 +321,7 @@ def run_cpd(cwd, clone_dir, repo_name, metrics_df):
     print('- Successfully merged CPD metrics (%s sec)' % round(time.time() - start_time, 2))
     
     # Export dataframe to csv
-    metrics_df.to_csv(r'%s\%s_cpd_measures.csv' % (cpd_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.to_csv(r'%s/%s_cpd_measures.csv' % (cpd_dir, repo_name), sep=',', na_rep='', index=False)
             
     return metrics_df
 
@@ -319,13 +329,16 @@ def run_cloc(cwd, clone_dir, repo_name, metrics_df):
     print('~~~~~~ Running cloc ~~~~~~')
     
     # Create cpd results directory
-    cloc_dir = r'%s\tool_results\cloc\%s' % (cwd, repo_name)
+    cloc_dir = r'%s/tool_results/cloc/%s' % (cwd, repo_name)
     if not os.path.exists(cloc_dir):
         os.makedirs(cloc_dir)
     
     # Execute cloc tool
     start_time = time.time()
-    COMMAND4 = r'%s\lib\cloc-1.88.exe %s --by-file --force-lang="Java",java --include-ext=java --csv --out="%s\%s_comments_measures.csv"' % (cwd, clone_dir, cloc_dir, repo_name)
+    if platform.system() == 'Windows':
+        COMMAND4 = r'%s/lib/cloc-1.88.exe %s --by-file --force-lang="Java",java --include-ext=java --csv --out="%s/%s_comments_measures.csv"' % (cwd, clone_dir, cloc_dir, repo_name)
+    elif platform.system() == 'Linux':
+        COMMAND4 = r'cloc %s --by-file --force-lang="Java",java --include-ext=java --csv --out="%s/%s_comments_measures.csv"' % (clone_dir, cloc_dir, repo_name)
     p = subprocess.Popen(COMMAND4, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     (stdout, stderr) = p.communicate()
     exit_code = p.returncode
@@ -339,20 +352,24 @@ def run_cloc(cwd, clone_dir, repo_name, metrics_df):
     
     # Read cloc csv results
     start_time = time.time()
-    temp_dataset = pd.read_csv(r'%s\%s_comments_measures.csv' % (cloc_dir, repo_name), sep=",")
+    temp_dataset = pd.read_csv(r'%s/%s_comments_measures.csv' % (cloc_dir, repo_name), sep=",")
     # Remove last row with redundant data
     temp_dataset = temp_dataset[:-1]
     # Remove useless prefix from class path and class name
-    for index, row in temp_dataset.iterrows():
-        temp_dataset.loc[index,'filename'] = row['filename'].split('%s\\' % repo_name, 1)[-1]
-    # Replace '\' with '/'
-    temp_dataset['filename'] = temp_dataset['filename'].str.replace('\\', '/')
+    if platform.system() == 'Windows':
+        for index, row in temp_dataset.iterrows():
+            temp_dataset.loc[index,'filename'] = row['filename'].split('%s\\' % repo_name, 1)[-1]
+        # Replace '\' with '/'
+        temp_dataset['filename'] = temp_dataset['filename'].str.replace('\\', '/')
+    elif platform.system() == 'Linux':
+        for index, row in temp_dataset.iterrows():
+            temp_dataset.loc[index,'filename'] = row['filename'].split('%s/' % repo_name, 1)[-1]
     
     # Merge cloc metrics dataframe with the updated dataset    
     for index, row in temp_dataset.iterrows():
-        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'], 'comment_lines'] = row['comment']
-        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'], 'ncloc'] = row['code']
-        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'], 'total_lines'] = row['blank'] + row['code'] + row['comment']
+        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'].lower(), 'comment_lines'] = row['comment']
+        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'].lower(), 'ncloc'] = row['code']
+        metrics_df.loc[metrics_df['class_path'].str.lower() == row['filename'].lower(), 'total_lines'] = row['blank'] + row['code'] + row['comment']
     
     # Fill NaN values of duplicated_lines with zeros
     metrics_df['comment_lines'].fillna(0, inplace=True)
@@ -360,7 +377,7 @@ def run_cloc(cwd, clone_dir, repo_name, metrics_df):
     print('- Successfully merged CLOC metrics (%s sec)' % round(time.time() - start_time, 2))
     
     # Export dataframe to csv
-    metrics_df.to_csv(r'%s\%s_cloc_measures.csv' % (cloc_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.to_csv(r'%s/%s_cloc_measures.csv' % (cloc_dir, repo_name), sep=',', na_rep='', index=False)
             
     return metrics_df
 
@@ -390,8 +407,8 @@ def run_classifier(cwd, metrics_df):
     metrics_df.drop('comment_lines', axis=1, inplace=True)
     
     # Load the model and scaler from disk
-    loaded_model = pickle.load(open(r'%s\models\finalized_model_no_rm.sav' % cwd, 'rb'))
-    loaded_scaler = pickle.load(open(r'%s\models\finalized_scaler_no_rm.sav' % cwd, 'rb'))
+    loaded_model = pickle.load(open(r'%s/models/finalized_model_no_rm.sav' % cwd, 'rb'))
+    loaded_scaler = pickle.load(open(r'%s/models/finalized_scaler_no_rm.sav' % cwd, 'rb'))
     
     # Transform to scaled data
     metrics_df = loaded_scaler.transform(metrics_df)
@@ -413,30 +430,30 @@ def run_classifier(cwd, metrics_df):
 
 def export_results(cwd, repo_name, metrics_df):       
     # Create results directory
-    data_dir = r'%s\results\%s' % (cwd, repo_name)
+    data_dir = r'%s/results/%s' % (cwd, repo_name)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     
     # Export dataframe to csv
-    metrics_df.to_csv(r'%s\%s_all_classes.csv' % (data_dir, repo_name), sep=',', na_rep='', index=False)
-    metrics_df.loc[metrics_df['high_td'] == 1].to_csv(r'%s\%s_high_td_classes.csv' % (data_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.to_csv(r'%s/%s_all_classes.csv' % (data_dir, repo_name), sep=',', na_rep='', index=False)
+    metrics_df.loc[metrics_df['high_td'] == 1].to_csv(r'%s/%s_high_td_classes.csv' % (data_dir, repo_name), sep=',', na_rep='', index=False)
     
     # Export dataframe to json
-    metrics_df.to_json(r'%s\%s_all_classes.json' % (data_dir, repo_name), orient='records')
-    metrics_df.loc[metrics_df['high_td'] == 1].to_json(r'%s\%s_high_td_classes.json' % (data_dir, repo_name), orient='records')
+    metrics_df.to_json(r'%s/%s_all_classes.json' % (data_dir, repo_name), orient='records')
+    metrics_df.loc[metrics_df['high_td'] == 1].to_json(r'%s/%s_high_td_classes.json' % (data_dir, repo_name), orient='records')
     
     # Export dataframe to html
-    metrics_df.to_html(r'%s\%s_all_classes.html' % (data_dir, repo_name), justify='left')
-    metrics_df.loc[metrics_df['high_td'] == 1].to_html(r'%s\%s_high_td_classes.html' % (data_dir, repo_name), justify='left')
+    metrics_df.to_html(r'%s/%s_all_classes.html' % (data_dir, repo_name), justify='left')
+    metrics_df.loc[metrics_df['high_td'] == 1].to_html(r'%s/%s_high_td_classes.html' % (data_dir, repo_name), justify='left')
     
     print('- Detailed results in csv, json and html format can be found in %s folder' % data_dir)
 
 def remove_temp_files(cwd, repo_name):
-    clone_dir = r'%s\cloned\%s' % (cwd, repo_name)
-    pydriller_dir = r'%s\tool_results\pydriller\%s' % (cwd, repo_name)
-    ck_dir = r'%s\tool_results\ck\%s' % (cwd, repo_name)
-    cpd_dir = r'%s\tool_results\cpd\%s' % (cwd, repo_name)
-    cloc_dir = r'%s\tool_results\cloc\%s' % (cwd, repo_name)
+    clone_dir = r'%s/cloned/%s' % (cwd, repo_name)
+    pydriller_dir = r'%s/tool_results/pydriller/%s' % (cwd, repo_name)
+    ck_dir = r'%s/tool_results/ck/%s' % (cwd, repo_name)
+    cpd_dir = r'%s/tool_results/cpd/%s' % (cwd, repo_name)
+    cloc_dir = r'%s/tool_results/cloc/%s' % (cwd, repo_name)
     
     shutil.rmtree(clone_dir)
     

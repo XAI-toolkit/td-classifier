@@ -1,8 +1,9 @@
 name: td_classifier
 channels:
-  - conda-forge
+  - anaconda
   - defaults
 dependencies:
+  - pip=21.1.1
   - flask=1.1.2
   - flask-cors=3.0.10
   - gitpython=3.1.17
