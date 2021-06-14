@@ -438,7 +438,7 @@ def run_classifier_service(git_url_param=None):
         return resp
 
 #===============================================================================
-# run_classifier_service ()
+# download_csv ()
 #===============================================================================
 @app.route('/TDClassifier/DownloadCSV', methods=['GET'])
 def download_csv(git_url_param=None):
@@ -471,7 +471,7 @@ def download_csv(git_url_param=None):
         return send_from_directory(directory=data_dir, filename='%s_all_classes.csv' % repo_name, mimetype='text/csv', as_attachment=True)
 
 #===============================================================================
-# run_classifier_service ()
+# download_json ()
 #===============================================================================
 @app.route('/TDClassifier/DownloadJSON', methods=['GET'])
 def download_json(git_url_param=None):

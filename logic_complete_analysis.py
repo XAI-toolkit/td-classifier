@@ -402,6 +402,9 @@ def run_classifier(cwd, metrics_df):
     metrics_df['duplicated_lines_cpd_density'] = metrics_df['duplicated_lines_cpd_density']*100
     metrics_df['comment_lines_cloc_density'] = metrics_df['comment_lines_cloc_density']*100
     
+    # Fill any nan lines with zeros
+    metrics_df.fillna(0, inplace=True)
+    
     # Remove replaced features
     metrics_df.drop('duplicated_lines', axis=1, inplace=True)
     metrics_df.drop('comment_lines', axis=1, inplace=True)
