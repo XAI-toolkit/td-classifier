@@ -13,7 +13,7 @@ import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from waitress import serve
-from logic_complete_analysis import clone_project, run_pydriller, run_ck, run_refactoring_miner, run_cpd, run_cloc, run_classifier, export_results
+from logic_complete_analysis import clone_project, run_pydriller, run_ck, run_refactoring_miner, run_cpd, run_cloc, run_classifier, export_results, import_to_database, read_from_database
 from logic_individual_analysis import run_pydriller2, run_ck2, run_refactoring_miner2, run_cpd2, run_cloc2, merge_results
 
 # Create the Flask app
@@ -426,6 +426,10 @@ def run_classifier_service(git_url_param=None):
         # Convert dataframe to dict
         results = metrics_df.to_dict(orient='records')
         
+        # Add to database
+        results_with_id = { '_id': repo_name, 'results': results }
+        import_to_database(results_with_id)
+        
         # Compose and jsonify respond
         message = {
             'status': 200,
@@ -504,6 +508,47 @@ def download_json(git_url_param=None):
         return send_from_directory(directory=data_dir, filename='%s_all_classes.json' % repo_name, mimetype='application/json', as_attachment=True)
 
 #===============================================================================
+# check_retrieve_db ()
+#===============================================================================
+@app.route('/TDClassifier/CheckRetrieveDB', methods=['GET'])
+def check_retrieve_db(git_url_param=None):
+    """
+    API Call to DownloadCSV service
+    Arguments:
+        git_url_param: Required (sent as URL query parameter from API Call)
+    Returns:
+        A csv containing the classification results, intermediate static analysis
+        results, a status code and a message.
+    """
+
+    # Parse URL-encoded parameters
+    git_url_param = request.args.get('git_url', type=str) # Required: if key doesn't exist, returns None
+
+    # If required parameters are missing from URL
+    if git_url_param is None:
+        return unprocessable_entity()
+    else:
+        # Set repo name from repo url
+        if '.git' not in git_url_param:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]))).lower().strip()
+        else:
+            repo_name = (('%s_%s') % (git_url_param.split('/')[-2], (git_url_param.split('/')[-1]).split('.')[-2])).lower().strip()
+        
+        # Retrieve from database    
+        results = read_from_database(repo_name)
+    
+        # Compose and jsonify respond
+        message = {
+            'status': 200,
+            'message': 'The request was fulfilled.',
+            'results': results,
+    	}
+        resp = jsonify(message)
+        resp.status_code = 200
+
+        return resp
+
+#===============================================================================
 # errorhandler ()
 #===============================================================================
 @app.errorhandler(400)
@@ -540,18 +585,23 @@ def internal_server_error(error=None):
 #===============================================================================
 # run_server ()
 #===============================================================================
-def run_server(host, port, mode, debug_mode, cwd):
+def run_server(host, port, mode, dbhost, dbport, dbname, debug_mode, cwd):
     """
     Executes the command to start the server
     Arguments:
         host: retrieved from create_arg_parser() as a string
         port: retrieved from create_arg_parser() as a int
         mode: retrieved from create_arg_parser() as a string
+        dbhost: retrieved from create_arg_parser() as a string
+        dbport: retrieved from create_arg_parser() as a string
+        dbname: retrieved from create_arg_parser() as a string
         debug_mode: retrieved from create_arg_parser() as a bool
     """
 
     print('server:      %s:%s' % (host, port))
     print('mode:        %s' % (mode))
+    print('db server:   %s:%s' % (dbhost, dbport))
+    print('db name:     %s' % (dbname))
     print('debug_mode:  %s' % (debug_mode))
     print('working_directory:  %s' % (cwd))
     if debug_mode:
@@ -559,6 +609,9 @@ def run_server(host, port, mode, debug_mode, cwd):
 
     # Store settings in environment variables
     os.environ['DEBUG'] = str(debug_mode)
+    os.environ['MONGO_HOST'] = dbhost
+    os.environ['MONGO_PORT'] = dbport
+    os.environ['MONGO_DBNAME'] = dbname
     os.environ['CWD'] = str(cwd)
 
     if mode == 'builtin':
@@ -586,6 +639,9 @@ def create_arg_parser():
     parser.add_argument('h', metavar='HOST', help='Server HOST (e.g. "localhost")', type=str)
     parser.add_argument('p', metavar='PORT', help='Server PORT (e.g. "5000")', type=int)
     parser.add_argument('m', metavar='SERVER_MODE', help=", ".join(server_modes), choices=server_modes, type=str)
+    parser.add_argument('-dh', metavar='DB_HOST', help='MongoDB HOST (e.g. "localhost")', type=str, default='localhost')
+    parser.add_argument('-dp', metavar='DB_PORT', help='MongoDB PORT (e.g. "27017")', type=str, default='27017')
+    parser.add_argument('-dn', metavar='DB_DBNAME', help="Database NAME", type=str, default='td_classifier_service')
     parser.add_argument('--debug', help="Run builtin server in debug mode", action='store_true', default=False)
 
     return parser
@@ -609,13 +665,16 @@ def main():
     host = args.h
     mode = args.m
     port = args.p
+    dbhost = args.dh
+    dbport = args.dp
+    dbname = args.dn
     debug_mode = args.debug
     
     # Set current working directory
     cwd = os.getcwd()
 
     # Run server with user-given arguments
-    run_server(host, port, mode, debug_mode, cwd)
+    run_server(host, port, mode, dbhost, dbport, dbname, debug_mode, cwd)
 
 if __name__ == '__main__':
     main()

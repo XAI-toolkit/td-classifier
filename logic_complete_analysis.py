@@ -11,6 +11,7 @@ import platform
 import time
 import subprocess
 import pickle
+import pymongo
 import pandas as pd
 import numpy as np
 from git import Repo, exc
@@ -459,5 +460,53 @@ def remove_temp_files(cwd, repo_name):
     cloc_dir = r'%s/tool_results/cloc/%s' % (cwd, repo_name)
     
     shutil.rmtree(clone_dir)
+
+#===============================================================================
+# import_to_database ()
+#===============================================================================
+def import_to_database(dict_obj):
+    # Read settings from environment variables
+    mongo_host = os.environ.get('MONGO_HOST')
+    mongo_port = int(os.environ.get('MONGO_PORT'))
+    db_name = os.environ.get('MONGO_DBNAME')
+
+    client = pymongo.MongoClient(mongo_host, mongo_port, serverSelectionTimeoutMS=2000)
+    db_instance = client[db_name]
+    td_classifier_collection = db_instance['td_classifier']
+
+    try:
+        result = td_classifier_collection.update({ '_id': dict_obj['_id'] }, dict_obj, upsert=True)
+    except Exception as e:
+        result = e
+        print(result)
+
+    return result
+
+#===============================================================================
+# read_from_database ()
+#===============================================================================
+def read_from_database(repo_name):
+    # Read settings from parameters
+    mongo_host = os.environ.get('MONGO_HOST')
+    mongo_port = int(os.environ.get('MONGO_PORT'))
+    db_name = os.environ.get('MONGO_DBNAME')
+    find_query = { '_id': repo_name }
     
-    
+    client = pymongo.MongoClient(mongo_host, mongo_port, serverSelectionTimeoutMS=2000)
+    db_instance = client[db_name]
+    td_classifier_collection = db_instance['td_classifier']
+
+    try:
+        # Execute search query
+        retrieved_project = td_classifier_collection.find_one(find_query)
+        
+        # If cursor does not contain results
+        if retrieved_project == None:
+            result = -1
+        else:
+            result = retrieved_project['results']
+    except Exception as e:
+        result = e
+        print(result)
+
+    return result
