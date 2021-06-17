@@ -15,7 +15,7 @@ TD Classifier is a novel tool that employs Machine Learning (ML) for classifying
 In this section, we provide instructions on how the user can build the python Flask server of the TD Classifier from scratch, using the Anaconda virtual environment. The TD Classifier is developed to run on Unix and Windows systems with python 3.6.* innstalled. We suggest installing python via the Anaconda distribution as it provides an easy way to create a virtual environment and install dependencies. The configuration steps needed, are described below:
 
 - **Step 1**: Download the latest [Anaconda distribution](https://www.anaconda.com/distribution/) and follow the installation steps described in the [Anaconda documentation](https://docs.anaconda.com/anaconda/install/windows/).
-- **Step 2**: Open Anaconda cmd. Running Anaconda cmd activates the base environment. We need to create a specific environment to run Forecasting Toolbox. Create a new python 3.6.4 environment by running the following command:
+- **Step 2**: Open Anaconda cmd. Running Anaconda cmd activates the base environment. We need to create a specific environment to run TD Classifier backend. Create a new python 3.6.4 environment by running the following command:
 ```bash
 conda create --name td_classifier python=3.6.4
 ```
@@ -42,7 +42,7 @@ In this section, we provide instructions on how the user can build a new Docker 
 
 - **Step 1**: Download and install [Docker](https://www.docker.com/)
 - **Step 2**: Clone the latest TD Classifier version and navigate to the home directory. You should see a [DockerFile](/blob/master/Dockerfile) and a [environment.yml](./blob/master/environment.yml) file, which contains the Conda environment dependencies. 
-- **Step 3**: In the home directory of the Forecasting Toolbox, open cmd and execute the following command:
+- **Step 3**: In the home directory of the TD Classifier, open cmd and execute the following command:
 ```bash
 sudo docker build -t td_classifier_image .
 ``` 
@@ -91,7 +91,7 @@ optional arguments:
 
 `HOST`, `PORT`, and `SERVER_MODE` arguments are **mandatory**. You can set them according to your needs.
 
-`DB_HOST`, `DB_PORT`, and `DB_DBNAME` arguments are **optional** and assume that there is a MongoDB instance running either on a local machine or remotely. In case that there is no such MongoDB instance running, the Forecasting Toolbox will still return the results, but they will not be stored anywhere.
+`DB_HOST`, `DB_PORT`, and `DB_DBNAME` arguments are **optional** and assume that there is a MongoDB instance running either on a local machine or remotely. In case that there is no such MongoDB instance running, the TD Classifier will still return the results, but they will not be stored anywhere.
 
 ### Run built-in Flask server
 
