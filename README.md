@@ -151,3 +151,24 @@ This command will start the Waitress server locally on port 5000 and store the r
 ## Next Steps
 
 Once the server is up and running, you can either exploit the TD Classifier APIs directly via requests, or setup the SDK4ED platform locally (see [here](https://gitlab.seis.iti.gr/sdk4ed-wiki/wiki-home/wikis/home)) to benefit from the already implemented and user-friendly TD Classifier frontend.
+
+
+## How to cite?
+
+A [paper](https://dl.acm.org/doi/abs/10.1145/3524843.3528094) introducing the **TD Classifier** tool has been published in the *Proceedings of the International Conference on Technical Debt (TechDebt '22)*. To cite this work, please use the following bibtex entry:
+
+```
+@inproceedings{tsoukalas2022td,
+  author = {Tsoukalas, Dimitrios and Chatzigeorgiou, Alexander and Ampatzoglou, Apostolos and Mittas, Nikolaos and Kehagias, Dionysios},
+  title = {TD Classifier: Automatic Identification of Java Classes with High Technical Debt},
+  year = {2022},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  doi = {10.1145/3524843.3528094},
+  booktitle = {Proceedings of the International Conference on Technical Debt},
+  pages = {76–80},
+  numpages = {5},
+  location = {Pittsburgh, Pennsylvania},
+  series = {TechDebt '22}
+}
+```
