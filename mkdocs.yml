@@ -1,0 +1,5 @@
+site_name: TD Classifier
+repo_url: https://github.com/XAI-toolkit/td-classifier
+
+nav:
+  - TD Classifier: 'index.md'
